@@ -235,8 +235,4 @@ public class RevMAXSwerveModule {
     m_desiredState = desiredState;
   }
 
-  /** Zeroes all the SwerveModule encoders. */
-  public void resetDriveEncodersToZero() {
-    m_drivingEncoder.setPosition(0);
-  }
 }

@@ -42,6 +42,7 @@
     "**/.wpilib": true,
     "**/.gradle": true,
     "**/gradle": true,
+    "ctre_sim": true,
     "gradlew": true,
     "gradlew.bat": true,
     "build.gradle": true,

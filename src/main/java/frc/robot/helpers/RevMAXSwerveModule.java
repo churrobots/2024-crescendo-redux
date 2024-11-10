@@ -279,6 +279,7 @@ public class RevMAXSwerveModule {
       0.0 // starting angle
   );
 
+  // TODO: should getAppliedOutput() be taken from Sim objects instead?
   public void updateSimPeriodic() {
     m_drivePhysicsSim.setInput(m_drivingSparkMax.getAppliedOutput() * RobotController.getBatteryVoltage());
     m_drivePhysicsSim.update(TimedRobot.kDefaultPeriod);

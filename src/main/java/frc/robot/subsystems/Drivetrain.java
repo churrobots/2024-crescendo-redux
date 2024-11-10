@@ -20,6 +20,7 @@ import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.CANMapping;
 import frc.robot.helpers.RevMAXSwerveModule;
 import frc.robot.helpers.SwerveUtils;
@@ -89,6 +90,7 @@ public class Drivetrain extends SubsystemBase {
       new Pose2d());
 
   public Drivetrain() {
+    SmartDashboard.putData("Field", m_fieldViz);
   }
 
   @Override
@@ -286,8 +288,8 @@ public class Drivetrain extends SubsystemBase {
   // --- BEGIN STUFF FOR SIMULATION ---
   // see inspiration here:
   // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerve.java#L411
-  private Pose2d m_simPose = new Pose2d();
-  private final Field2d m_fieldViz = new Field2d();
+  Pose2d m_simPose = new Pose2d();
+  final Field2d m_fieldViz = new Field2d();
 
   @Override
   public void simulationPeriodic() {
@@ -310,5 +312,6 @@ public class Drivetrain extends SubsystemBase {
     var gyroSimState = m_gyro.getSimState();
     gyroSimState.setRawYaw(m_simPose.getRotation().getDegrees());
   }
+  // --- END STUFF FOR SIMULATION ---
 
 }

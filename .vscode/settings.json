@@ -80,5 +80,6 @@
   "redhat.telemetry.enabled": false,
   "workbench.startupEditor": "none",
   "editor.minimap.size": "fit",
-  "terminal.integrated.tabs.enabled": false
+  "terminal.integrated.tabs.enabled": false,
+  "editor.wordBasedSuggestions": "off"
 }

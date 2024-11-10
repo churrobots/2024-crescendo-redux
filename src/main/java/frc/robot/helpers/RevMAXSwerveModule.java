@@ -275,8 +275,7 @@ public class RevMAXSwerveModule {
       Double.NEGATIVE_INFINITY, // Min angle
       Double.POSITIVE_INFINITY, // Max angle
       false, // Simulate gravity
-      // TODO: randomize the starting angle like it would be on a real robot?
-      0.0 // starting angle
+      Math.random() * 2 * Math.PI // random starting angle for the wheels, never know
   );
 
   // TODO: should getAppliedOutput() be taken from Sim objects instead?

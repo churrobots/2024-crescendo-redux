@@ -198,7 +198,12 @@ public class RevMAXSwerveModule {
     m_drivingSparkMax.configure(drivingConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_turningSparkMax.configure(turningConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    // These need to be initialized in the constructor because the CAN IDs are
+    // Start at zero so that simulation doesn't freak out. Otherwise
+    // it will be trying to simulate without a starting Control Mode.
+    m_drivingPIDController.setReference(0, SparkMax.ControlType.kVelocity);
+    m_turningPIDController.setReference(0, SparkMax.ControlType.kPosition);
+
+    // These sims need to be initialized in the constructor because the CAN IDs are
     // passed in and we won't have the SparkMax reference until this point.
     m_driveMotorSim = new SparkSim(
         m_drivingSparkMax, DCMotor.getNEO(1));

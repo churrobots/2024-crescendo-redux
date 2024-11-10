@@ -103,6 +103,7 @@ public class Drivetrain extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+    m_fieldViz.getObject("Odometry").setPose(m_poseEstimator.getEstimatedPosition());
   }
 
   ChassisSpeeds getRobotRelativeSpeeds() {

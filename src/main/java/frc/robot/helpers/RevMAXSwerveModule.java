@@ -7,8 +7,15 @@ package frc.robot.helpers;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkSim;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.AbsoluteEncoder;
@@ -74,6 +81,9 @@ public class RevMAXSwerveModule {
   private final double kDrivingMotorFreeSpeedRps = Constants.kMotorFreeSpeedRpm / 60;
 
   private final double kWheelCircumferenceMeters = Constants.kWheelDiameterMeters * Math.PI;
+
+  // The turning motor is a 12:1 reduction using UltraPlanetary cartridges
+  private final double kTurningMotorReduction = 12.0;
 
   // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
   // teeth on the bevel pinion
@@ -187,6 +197,13 @@ public class RevMAXSwerveModule {
     // Apply the configuration we just built out.
     m_drivingSparkMax.configure(drivingConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_turningSparkMax.configure(turningConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+    // These need to be initialized in the constructor because the CAN IDs are
+    // passed in and we won't have the SparkMax reference until this point.
+    m_driveMotorSim = new SparkSim(
+        m_drivingSparkMax, DCMotor.getNEO(1));
+    m_turningMotorSim = new SparkSim(
+        m_turningSparkMax, DCMotor.getNeo550(1));
   }
 
   /**
@@ -235,4 +252,40 @@ public class RevMAXSwerveModule {
     m_desiredState = desiredState;
   }
 
+  // --- BEGIN STUFF FOR SIMULATION ---
+  // see inspiration here:
+  // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerveModule.java#L88
+  // TODO: VecBuilder was weird, figure out if we need to add noise back in
+  final double kSimulatedRadiansPerPulse = 2.0 * Math.PI / 2048;
+  final SparkSim m_driveMotorSim;
+  final SparkSim m_turningMotorSim;
+  final FlywheelSim m_drivePhysicsSim = new FlywheelSim(
+      LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 0.01, kDrivingMotorReduction),
+      DCMotor.getNEO(1));
+  final SingleJointedArmSim m_turningPhysicsSim = new SingleJointedArmSim(
+      DCMotor.getNeo550(1),
+      kTurningMotorReduction,
+      0.001, // MOI
+      0.0, // Length (m)
+      Double.NEGATIVE_INFINITY, // Min angle
+      Double.POSITIVE_INFINITY, // Max angle
+      false, // Simulate gravity
+      // TODO: randomize the starting angle like it would be on a real robot?
+      0.0 // starting angle
+  );
+
+  public void updateSimPeriodic() {
+    m_drivePhysicsSim.setInput(m_drivingSparkMax.getAppliedOutput() * RobotController.getBatteryVoltage());
+    m_drivePhysicsSim.update(TimedRobot.kDefaultPeriod);
+    double metersPerSecond = m_drivePhysicsSim.getAngularVelocityRadPerSec() * Constants.kWheelDiameterMeters
+        / (2.0 * Math.PI);
+    m_driveMotorSim.iterate(metersPerSecond, RobotController.getBatteryVoltage(), TimedRobot.kDefaultPeriod);
+
+    m_turningPhysicsSim.setInput(
+        m_turningSparkMax.getAppliedOutput() * RobotController.getBatteryVoltage());
+    m_turningPhysicsSim.update(TimedRobot.kDefaultPeriod);
+    m_turningMotorSim.iterate(m_turningPhysicsSim.getVelocityRadPerSec(), RobotController.getBatteryVoltage(),
+        TimedRobot.kDefaultPeriod);
+  }
+  // --- END STUFF FOR SIMULATION ---
 }

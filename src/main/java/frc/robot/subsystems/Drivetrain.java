@@ -9,6 +9,7 @@ import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -17,6 +18,8 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import frc.robot.CANMapping;
 import frc.robot.helpers.RevMAXSwerveModule;
 import frc.robot.helpers.SwerveUtils;
@@ -278,6 +281,34 @@ public class Drivetrain extends SubsystemBase {
 
   Rotation2d getGyroAngle() {
     return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
+  }
+
+  // --- BEGIN STUFF FOR SIMULATION ---
+  // see inspiration here:
+  // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerve.java#L411
+  private Pose2d m_simPose = new Pose2d();
+  private final Field2d m_fieldViz = new Field2d();
+
+  @Override
+  public void simulationPeriodic() {
+    m_frontLeft.updateSimPeriodic();
+    m_frontRight.updateSimPeriodic();
+    m_rearLeft.updateSimPeriodic();
+    m_rearRight.updateSimPeriodic();
+
+    // Update pose by integrating ChassisSpeeds.
+    final ChassisSpeeds chassisSpeeds = m_kinematics.toChassisSpeeds(getModuleStates());
+    m_simPose = m_simPose.transformBy(
+        new Transform2d(
+            new Translation2d(
+                chassisSpeeds.vxMetersPerSecond * TimedRobot.kDefaultPeriod,
+                chassisSpeeds.vyMetersPerSecond * TimedRobot.kDefaultPeriod),
+            new Rotation2d(chassisSpeeds.omegaRadiansPerSecond * TimedRobot.kDefaultPeriod)));
+    m_fieldViz.setRobotPose(m_simPose);
+
+    // Update IMU based on sim pose.
+    var gyroSimState = m_gyro.getSimState();
+    gyroSimState.setRawYaw(m_simPose.getRotation().getDegrees());
   }
 
 }

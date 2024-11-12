@@ -1,6 +1,3 @@
-.DS_Store
-ctre_sim/
-
 # This gitignore has been specially created by the WPILib team.
 # If you remove items from this file, intellisense might break.
 
@@ -185,3 +182,11 @@ ctre_sim/
 # clangd
 /.cache
 compile_commands.json
+
+##########################################
+# Churrobots additions
+##########################################
+
+# We actually want to share our Sim GUI for now, since it takes
+# some time to setup and we usually want a common view of simulation
+!sim*

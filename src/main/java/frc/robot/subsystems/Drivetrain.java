@@ -250,6 +250,12 @@ public class Drivetrain extends SubsystemBase {
     double ySpeedDelivered = ySpeedCommanded * Constants.kMaxSpeedMetersPerSecond;
     double rotDelivered = m_currentRotation * Constants.kMaxAngularSpeed;
 
+    // TODO: remove this introspection once we debug everything?
+    SmartDashboard.putNumber("drivetrain.xInput", xSpeed);
+    SmartDashboard.putNumber("drivetrain.xAdjusted", xSpeedCommanded);
+    SmartDashboard.putNumber("drivetrain.yInput", ySpeed);
+    SmartDashboard.putNumber("drivetrain.yAdjusted", ySpeedCommanded);
+
     drive(new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered), fieldRelative);
 
   }

@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkSim;
@@ -114,8 +115,13 @@ public class RevMAXSwerveModule {
   private final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
   private final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
 
-  private final int kDrivingMotorCurrentLimit = 40; // 40amps
+  // FIXME: simulation seems to be hitting current limits and capping it at about
+  // 50% voltage output but even when setting this limit super high, and getting
+  // 100% voltage, speed is still only about 1/3rd of what it should be
+  private final int kDrivingMotorCurrentLimit = 40; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps
+
+  private final String m_logPrefix;
 
   /**
    * Constructs a MAXSwerveModule and configures the driving and turning motor,
@@ -126,6 +132,7 @@ public class RevMAXSwerveModule {
   public RevMAXSwerveModule(int drivingCANId, int turningCANId, double chassisAngularOffset) {
     m_drivingSparkMax = new SparkMax(drivingCANId, MotorType.kBrushless);
     m_turningSparkMax = new SparkMax(turningCANId, MotorType.kBrushless);
+    m_logPrefix = String.format("RevMod[%s,%s]", drivingCANId, turningCANId);
 
     // Factory reset, so we get the SPARKS MAX to a known state before configuring
     // them. This is useful in case a SPARK MAX is swapped out.
@@ -255,6 +262,12 @@ public class RevMAXSwerveModule {
     m_turningPIDController.setReference(correctedDesiredState.angle.getRadians(), SparkMax.ControlType.kPosition);
     // TODO: should this be using the correctedDesiredState? is this a bug?
     m_desiredState = desiredState;
+
+    // TODO: remove introspection once we've debugged?
+    SmartDashboard.putNumber(String.format("%s.drive.targetMPS", m_logPrefix),
+        correctedDesiredState.speedMetersPerSecond);
+    SmartDashboard.putNumber(String.format("%s.turn.targetRadians", m_logPrefix),
+        correctedDesiredState.angle.getRadians());
   }
 
   // --- BEGIN STUFF FOR SIMULATION ---
@@ -278,19 +291,28 @@ public class RevMAXSwerveModule {
       Math.random() * 2 * Math.PI // random starting angle for the wheels, never know
   );
 
-  // TODO: should getAppliedOutput() be taken from Sim objects instead?
   public void updateSimPeriodic() {
-    m_drivePhysicsSim.setInput(m_drivingSparkMax.getAppliedOutput() * RobotController.getBatteryVoltage());
+
+    // TODO: should getAppliedOutput() be taken from m_driveMotorSim instead?
+    double appliedDriveVoltagePercentage = m_drivingSparkMax.getAppliedOutput();
+    m_drivePhysicsSim.setInput(appliedDriveVoltagePercentage * RobotController.getBatteryVoltage());
     m_drivePhysicsSim.update(TimedRobot.kDefaultPeriod);
     double metersPerSecond = m_drivePhysicsSim.getAngularVelocityRadPerSec() * Constants.kWheelDiameterMeters
         / (2.0 * Math.PI);
     m_driveMotorSim.iterate(metersPerSecond, RobotController.getBatteryVoltage(), TimedRobot.kDefaultPeriod);
 
-    m_turningPhysicsSim.setInput(
-        m_turningSparkMax.getAppliedOutput() * RobotController.getBatteryVoltage());
+    // TODO: should getAppliedOutput() be taken from m_turningMotorSim instead?
+    double appliedTurningVoltagePercentage = m_turningSparkMax.getAppliedOutput();
+    m_turningPhysicsSim.setInput(appliedTurningVoltagePercentage * RobotController.getBatteryVoltage());
     m_turningPhysicsSim.update(TimedRobot.kDefaultPeriod);
     m_turningMotorSim.iterate(m_turningPhysicsSim.getVelocityRadPerSec(), RobotController.getBatteryVoltage(),
         TimedRobot.kDefaultPeriod);
+
+    // TODO: remove introspection once we've debugged?
+    SmartDashboard.putNumber(String.format("%s.drive.voltagePercent", m_logPrefix), appliedDriveVoltagePercentage);
+    SmartDashboard.putNumber(String.format("%s.drive.actualMPS", m_logPrefix), metersPerSecond);
+    SmartDashboard.putNumber(String.format("%s.turn.voltagePercent", m_logPrefix), appliedTurningVoltagePercentage);
+    SmartDashboard.putNumber(String.format("%s.turn.actualRadians", m_logPrefix), m_turningPhysicsSim.getAngleRads());
   }
   // --- END STUFF FOR SIMULATION ---
 }

@@ -170,7 +170,7 @@ public class Drivetrain extends SubsystemBase {
   // https://github.com/firebears-frc/FB2024/blob/main/src/main/java/frc/robot/subsystems/Bass.java#L284
   void drive(ChassisSpeeds speeds, boolean fieldRelative) {
     if (fieldRelative) {
-      speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getPose().getRotation());
+      speeds.toRobotRelativeSpeeds(getPose().getRotation());
     }
     var swerveModuleStates = m_kinematics.toSwerveModuleStates(speeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.kMaxSpeedMetersPerSecond);

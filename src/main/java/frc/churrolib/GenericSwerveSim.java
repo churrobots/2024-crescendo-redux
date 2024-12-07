@@ -25,19 +25,16 @@ import frc.robot.Robot;
  */
 public class GenericSwerveSim implements SimulationEntity {
   final Pigeon2 m_gyro;
-  final SwerveDriveKinematics m_kinematics;
-  final Supplier<SwerveModuleState[]> m_statesSupplier;
+  final Supplier<ChassisSpeeds> m_chassisSpeedsSupplier;
   final Field2d m_fieldViz;
   Pose2d m_simPose;
 
   public GenericSwerveSim(
       Pigeon2 gyro,
-      SwerveDriveKinematics kinematics,
-      Supplier<SwerveModuleState[]> statesSupplier,
+      Supplier<ChassisSpeeds> chassisSpeedsSupplier,
       Field2d fieldViz) {
     m_gyro = gyro;
-    m_kinematics = kinematics;
-    m_statesSupplier = statesSupplier;
+    m_chassisSpeedsSupplier = chassisSpeedsSupplier;
     m_fieldViz = fieldViz;
     m_simPose = new Pose2d();
   }
@@ -55,14 +52,13 @@ public class GenericSwerveSim implements SimulationEntity {
 
   public void iterate(double timeDeltaInSeconds) {
     // Update pose by integrating ChassisSpeeds.
-    SwerveModuleState[] currentSwerveStates = m_statesSupplier.get();
-    final ChassisSpeeds chassisSpeeds = m_kinematics.toChassisSpeeds(currentSwerveStates);
+    final ChassisSpeeds currentChassisSpeeds = m_chassisSpeedsSupplier.get();
     m_simPose = m_simPose.transformBy(
         new Transform2d(
             new Translation2d(
-                chassisSpeeds.vxMetersPerSecond * timeDeltaInSeconds,
-                chassisSpeeds.vyMetersPerSecond * timeDeltaInSeconds),
-            new Rotation2d(chassisSpeeds.omegaRadiansPerSecond * timeDeltaInSeconds)));
+                currentChassisSpeeds.vxMetersPerSecond * timeDeltaInSeconds,
+                currentChassisSpeeds.vyMetersPerSecond * timeDeltaInSeconds),
+            new Rotation2d(currentChassisSpeeds.omegaRadiansPerSecond * timeDeltaInSeconds)));
 
     // Update gyro based on sim pose.
     Pigeon2SimState gyroSimState = m_gyro.getSimState();

@@ -102,7 +102,7 @@ public class Drivetrain extends SubsystemBase {
 
   public Drivetrain() {
     SmartDashboard.putData("Field", m_fieldViz);
-    m_sim = new GenericSwerveSim(m_gyro, m_kinematics, this::getModuleStates, m_fieldViz);
+    m_sim = new GenericSwerveSim(m_gyro, this::getRobotRelativeSpeeds, m_fieldViz);
     ChurroSim.register(m_sim);
   }
 

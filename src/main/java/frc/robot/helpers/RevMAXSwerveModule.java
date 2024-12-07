@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkSim;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.PatchedSparkSim;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -39,6 +40,7 @@ public class RevMAXSwerveModule {
 
     // Tuning values
     public static final double kWheelDiameterMeters = 0.0831;
+    public static final double kWheelCircumferenceInMeters = Math.PI * kWheelDiameterMeters;
 
     public static final double kDrivingP = .08;// .04
     public static final double kDrivingI = 0;
@@ -83,8 +85,9 @@ public class RevMAXSwerveModule {
 
   private final double kWheelCircumferenceMeters = Constants.kWheelDiameterMeters * Math.PI;
 
-  // The turning motor is a 12:1 reduction using UltraPlanetary cartridges
-  private final double kTurningMotorReduction = 12.0;
+  // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
+  // https://www.revrobotics.com/rev-21-3005/
+  private final double kTurningMotorReduction = 9424 / 203;
 
   // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
   // teeth on the bevel pinion
@@ -96,10 +99,11 @@ public class RevMAXSwerveModule {
   private final double kDrivingEncoderPositionFactor = (Constants.kWheelDiameterMeters * Math.PI)
       / kDrivingMotorReduction; // meters
   private final double kDrivingEncoderVelocityFactor = ((Constants.kWheelDiameterMeters * Math.PI)
-      / kDrivingMotorReduction) / 60.0; // meters per second
+      / kDrivingMotorReduction) / 60.0; // meters per second because native units are RPM
 
   private final double kTurningEncoderPositionFactor = (2 * Math.PI); // radians
   private final double kTurningEncoderVelocityFactor = (2 * Math.PI) / 60.0; // radians per second
+                                                                             // because native units are RPM
 
   private final double kTurningEncoderPositionPIDMinInput = 0; // radians
   private final double kTurningEncoderPositionPIDMaxInput = kTurningEncoderPositionFactor; // radians
@@ -155,7 +159,12 @@ public class RevMAXSwerveModule {
 
     // Apply position and velocity conversion factors for the turning encoder. We
     // want these in radians and radians per second to use with WPILib's swerve
-    // APIs.
+    // APIs. Note that we have to set the conversion factor on BOTH the native
+    // encoder and the absolute encoder (even though we're theoretically only
+    // using the absolute encoder), since SparkSim relies on the native encoder
+    // conversion config when iterating the sim.
+    turningConfig.encoder.positionConversionFactor(kTurningEncoderPositionFactor);
+    turningConfig.encoder.velocityConversionFactor(kTurningEncoderVelocityFactor);
     turningConfig.absoluteEncoder.positionConversionFactor(kTurningEncoderPositionFactor);
     turningConfig.absoluteEncoder.velocityConversionFactor(kTurningEncoderVelocityFactor);
 
@@ -212,9 +221,9 @@ public class RevMAXSwerveModule {
 
     // These sims need to be initialized in the constructor because the CAN IDs are
     // passed in and we won't have the SparkMax reference until this point.
-    m_driveMotorSim = new SparkSim(
+    m_driveMotorSim = new PatchedSparkSim(
         m_drivingSparkMax, DCMotor.getNEO(1));
-    m_turningMotorSim = new SparkSim(
+    m_turningMotorSim = new PatchedSparkSim(
         m_turningSparkMax, DCMotor.getNeo550(1));
   }
 
@@ -274,9 +283,8 @@ public class RevMAXSwerveModule {
   // see inspiration here:
   // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerveModule.java#L88
   // TODO: VecBuilder was weird, figure out if we need to add noise back in
-  final double kSimulatedRadiansPerPulse = 2.0 * Math.PI / 2048;
-  final SparkSim m_driveMotorSim;
-  final SparkSim m_turningMotorSim;
+  final PatchedSparkSim m_driveMotorSim;
+  final PatchedSparkSim m_turningMotorSim;
   final FlywheelSim m_drivePhysicsSim = new FlywheelSim(
       LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 0.01, kDrivingMotorReduction),
       DCMotor.getNEO(1));
@@ -297,7 +305,7 @@ public class RevMAXSwerveModule {
     double appliedDriveVoltagePercentage = m_drivingSparkMax.getAppliedOutput();
     m_drivePhysicsSim.setInput(appliedDriveVoltagePercentage * RobotController.getBatteryVoltage());
     m_drivePhysicsSim.update(TimedRobot.kDefaultPeriod);
-    double metersPerSecond = m_drivePhysicsSim.getAngularVelocityRadPerSec() * Constants.kWheelDiameterMeters
+    double metersPerSecond = m_drivePhysicsSim.getAngularVelocityRadPerSec() * Constants.kWheelCircumferenceInMeters
         / (2.0 * Math.PI);
     m_driveMotorSim.iterate(metersPerSecond, RobotController.getBatteryVoltage(), TimedRobot.kDefaultPeriod);
 

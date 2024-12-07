@@ -311,10 +311,10 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void simulationPeriodic() {
-    m_frontLeft.updateSimPeriodic();
-    m_frontRight.updateSimPeriodic();
-    m_rearLeft.updateSimPeriodic();
-    m_rearRight.updateSimPeriodic();
+    m_frontLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
+    m_frontRight.getSim().iterate(TimedRobot.kDefaultPeriod);
+    m_rearLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
+    m_rearRight.getSim().iterate(TimedRobot.kDefaultPeriod);
 
     // Update pose by integrating ChassisSpeeds.
     final ChassisSpeeds chassisSpeeds = m_kinematics.toChassisSpeeds(getModuleStates());

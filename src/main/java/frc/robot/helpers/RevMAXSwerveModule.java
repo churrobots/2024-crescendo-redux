@@ -7,12 +7,8 @@ package frc.robot.helpers;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.simulation.FlywheelSim;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import frc.churrolib.ChurroSim;
+import frc.churrolib.RevMAXSwerveModuleSim;
 
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -24,8 +20,6 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
-// TODO: stop using PatchedSparkSim once RevLib fixes their SparkSim bugs
-import com.revrobotics.spark.PatchedSparkSim;
 
 /**
  * Build on top of the Rev MAX sample code
@@ -118,6 +112,8 @@ public class RevMAXSwerveModule {
 
   private final int kDrivingMotorCurrentLimit = 40; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps
+
+  final RevMAXSwerveModuleSim m_sim;
 
   /**
    * Constructs a MAXSwerveModule and configures the driving and turning motor,
@@ -217,12 +213,18 @@ public class RevMAXSwerveModule {
     m_drivingPIDController.setReference(0, SparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(0, SparkMax.ControlType.kPosition);
 
-    // These sims need to be initialized in the constructor because the CAN IDs are
-    // passed in and we won't have the SparkMax reference until this point.
-    m_driveMotorSim = new PatchedSparkSim(
-        m_drivingSparkMax, DCMotor.getNEO(1));
-    m_turningMotorSim = new PatchedSparkSim(
-        m_turningSparkMax, DCMotor.getNeo550(1));
+    // The sim needs to be initialized in the constructor because the CAN IDs are
+    // passed in and we won't have the SparkMax references until this point.
+    m_sim = new RevMAXSwerveModuleSim(
+        m_drivingSparkMax,
+        m_turningSparkMax,
+        Constants.kTurningMotorReduction,
+        kDrivingMotorReduction,
+        Constants.kWheelCircumferenceInMeters);
+  }
+
+  public ChurroSim getSim() {
+    return m_sim;
   }
 
   /**
@@ -274,43 +276,4 @@ public class RevMAXSwerveModule {
     // TODO: should this be using the correctedDesiredState? is this a bug?
     m_desiredState = desiredState;
   }
-
-  // --- BEGIN STUFF FOR SIMULATION ---
-  // see inspiration here:
-  // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerveModule.java#L88
-  // TODO: VecBuilder was weird, figure out if we need to add noise back in
-  final PatchedSparkSim m_driveMotorSim;
-  final PatchedSparkSim m_turningMotorSim;
-  final FlywheelSim m_drivePhysicsSim = new FlywheelSim(
-      LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 0.01, kDrivingMotorReduction),
-      DCMotor.getNEO(1));
-  final SingleJointedArmSim m_turningPhysicsSim = new SingleJointedArmSim(
-      DCMotor.getNeo550(1),
-      Constants.kTurningMotorReduction,
-      0.001, // MOI
-      0.0, // Length (m)
-      Double.NEGATIVE_INFINITY, // Min angle
-      Double.POSITIVE_INFINITY, // Max angle
-      false, // Simulate gravity
-      Math.random() * 2 * Math.PI // random starting angle for the wheels, never know
-  );
-
-  public void updateSimPeriodic() {
-
-    // TODO: should getAppliedOutput() be taken from m_driveMotorSim instead?
-    double appliedDriveVoltagePercentage = m_drivingSparkMax.getAppliedOutput();
-    m_drivePhysicsSim.setInput(appliedDriveVoltagePercentage * RobotController.getBatteryVoltage());
-    m_drivePhysicsSim.update(TimedRobot.kDefaultPeriod);
-    double metersPerSecond = m_drivePhysicsSim.getAngularVelocityRadPerSec() * Constants.kWheelCircumferenceInMeters
-        / (2.0 * Math.PI);
-    m_driveMotorSim.iterate(metersPerSecond, RobotController.getBatteryVoltage(), TimedRobot.kDefaultPeriod);
-
-    // TODO: should getAppliedOutput() be taken from m_turningMotorSim instead?
-    double appliedTurningVoltagePercentage = m_turningSparkMax.getAppliedOutput();
-    m_turningPhysicsSim.setInput(appliedTurningVoltagePercentage * RobotController.getBatteryVoltage());
-    m_turningPhysicsSim.update(TimedRobot.kDefaultPeriod);
-    m_turningMotorSim.iterate(m_turningPhysicsSim.getVelocityRadPerSec(), RobotController.getBatteryVoltage(),
-        TimedRobot.kDefaultPeriod);
-  }
-  // --- END STUFF FOR SIMULATION ---
 }

@@ -278,7 +278,7 @@ public class PatchedSparkSim {
     ////////////////////////////////////////////////////////
     // BEGIN PATCH
     // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    // NOTE: original revlib code divided by positionFactor incorrectly
+    // NOTE: original revlib code divided by positionFactor erroneously
     final double distanceInRotations = ((velocityRPM / 60) * dt);
     final double distanceInConvertedUnits = distanceInRotations * positionFactor;
     m_position.set(m_position.get() + distanceInConvertedUnits);

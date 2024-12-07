@@ -88,8 +88,6 @@ public class RevMAXSwerveModule {
 
   private final double kWheelCircumferenceMeters = Constants.kWheelDiameterMeters * Math.PI;
 
-  // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
-  // teeth on the bevel pinion
   private final double kDrivingMotorReduction = ((double) Constants.kWheelBevelTeeth * Constants.kFirstStageSpurTeeth)
       / ((double) Constants.kDrivingMotorPinionTeeth * Constants.kBevelPinionTeeth);
   private final double kDriveWheelFreeSpeedRps = (kDrivingMotorFreeSpeedRps * kWheelCircumferenceMeters)

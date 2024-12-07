@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.churrolib.GenericSwerveSim;
 import frc.robot.CANMapping;
 import frc.robot.helpers.RevMAXSwerveModule;
 import frc.robot.helpers.SwerveUtils;
@@ -98,8 +99,11 @@ public class Drivetrain extends SubsystemBase {
       },
       new Pose2d());
 
+  private final GenericSwerveSim m_swerveSim;
+
   public Drivetrain() {
     SmartDashboard.putData("Field", m_fieldViz);
+    m_swerveSim = new GenericSwerveSim(m_gyro, m_kinematics, this::getModuleStates, m_fieldViz);
   }
 
   @Override
@@ -304,32 +308,13 @@ public class Drivetrain extends SubsystemBase {
     return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
   }
 
-  // --- BEGIN STUFF FOR SIMULATION ---
-  // see inspiration here:
-  // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerve.java#L411
-  Pose2d m_simPose = new Pose2d();
-
   @Override
   public void simulationPeriodic() {
     m_frontLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
     m_frontRight.getSim().iterate(TimedRobot.kDefaultPeriod);
     m_rearLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
     m_rearRight.getSim().iterate(TimedRobot.kDefaultPeriod);
-
-    // Update pose by integrating ChassisSpeeds.
-    final ChassisSpeeds chassisSpeeds = m_kinematics.toChassisSpeeds(getModuleStates());
-    m_simPose = m_simPose.transformBy(
-        new Transform2d(
-            new Translation2d(
-                chassisSpeeds.vxMetersPerSecond * TimedRobot.kDefaultPeriod,
-                chassisSpeeds.vyMetersPerSecond * TimedRobot.kDefaultPeriod),
-            new Rotation2d(chassisSpeeds.omegaRadiansPerSecond * TimedRobot.kDefaultPeriod)));
-    m_fieldViz.setRobotPose(m_simPose);
-
-    // Update IMU based on sim pose.
-    var gyroSimState = m_gyro.getSimState();
-    gyroSimState.setRawYaw(m_simPose.getRotation().getDegrees());
+    m_swerveSim.iterate(TimedRobot.kDefaultPeriod);
   }
-  // --- END STUFF FOR SIMULATION ---
 
 }

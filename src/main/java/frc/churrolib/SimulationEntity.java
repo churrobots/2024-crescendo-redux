@@ -8,6 +8,6 @@ package frc.churrolib;
  * Base interface for all simulations, so that clients can simply call
  * iterate() without knowing about the concrete implementation.
  */
-public interface ChurroSim {
+public interface SimulationEntity {
   public void iterate(double timeDeltaInSeconds);
 }

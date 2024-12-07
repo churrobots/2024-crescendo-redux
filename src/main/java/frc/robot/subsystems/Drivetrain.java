@@ -19,9 +19,9 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.churrolib.ChurroSim;
 import frc.churrolib.GenericSwerveSim;
 import frc.robot.CANMapping;
 import frc.robot.helpers.RevMAXSwerveModule;
@@ -98,11 +98,12 @@ public class Drivetrain extends SubsystemBase {
       },
       new Pose2d());
 
-  private final GenericSwerveSim m_swerveSim;
+  private final GenericSwerveSim m_sim;
 
   public Drivetrain() {
     SmartDashboard.putData("Field", m_fieldViz);
-    m_swerveSim = new GenericSwerveSim(m_gyro, m_kinematics, this::getModuleStates, m_fieldViz);
+    m_sim = new GenericSwerveSim(m_gyro, m_kinematics, this::getModuleStates, m_fieldViz);
+    ChurroSim.register(m_sim);
   }
 
   @Override
@@ -305,15 +306,6 @@ public class Drivetrain extends SubsystemBase {
 
   Rotation2d getGyroAngle() {
     return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
-  }
-
-  @Override
-  public void simulationPeriodic() {
-    m_frontLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
-    m_frontRight.getSim().iterate(TimedRobot.kDefaultPeriod);
-    m_rearLeft.getSim().iterate(TimedRobot.kDefaultPeriod);
-    m_rearRight.getSim().iterate(TimedRobot.kDefaultPeriod);
-    m_swerveSim.iterate(TimedRobot.kDefaultPeriod);
   }
 
 }

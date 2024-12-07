@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.churrolib.SimulationEntity;
+import frc.churrolib.ChurroSim;
 import frc.churrolib.RevMAXSwerveModuleSim;
 
 import com.revrobotics.spark.SparkMax;
@@ -221,6 +222,7 @@ public class RevMAXSwerveModule {
         Constants.kTurningMotorReduction,
         kDrivingMotorReduction,
         Constants.kWheelCircumferenceInMeters);
+    ChurroSim.register(m_sim);
   }
 
   public SimulationEntity getSim() {

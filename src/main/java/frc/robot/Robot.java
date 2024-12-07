@@ -10,6 +10,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.churrolib.ChurroSim;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -58,6 +59,13 @@ public class Robot extends TimedRobot {
     // robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+  }
+
+  @Override
+  public void simulationPeriodic() {
+    // TODO: use a faster loop in a thread to make ChurroSim more realistic to motor
+    // controller clock speeds in the real world
+    ChurroSim.iterate(TimedRobot.kDefaultPeriod);
   }
 
   @Override

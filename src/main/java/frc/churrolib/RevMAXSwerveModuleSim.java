@@ -21,9 +21,6 @@ import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
  */
 public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
 
-  // see inspiration here:
-  // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerveModule.java#L88
-
   final SparkBase m_drivingMotorController;
   final SparkBase m_turningMotorController;
   final PatchedSparkSim m_drivingMotorControllerSim;

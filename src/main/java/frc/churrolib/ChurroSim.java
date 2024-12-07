@@ -13,6 +13,15 @@ import java.util.List;
  * `simulationPeriodic()` in your subsystems, you just use `ChurroSim.register`.
  */
 public class ChurroSim {
+
+  /**
+   * Base interface for all simulations, so that clients can simply call
+   * iterate() without knowing about the concrete implementation.
+   */
+  public interface SimulationEntity {
+    public void iterate(double timeDeltaInSeconds);
+  }
+
   static ChurroSim instance;
   final List<SimulationEntity> m_entities;
 

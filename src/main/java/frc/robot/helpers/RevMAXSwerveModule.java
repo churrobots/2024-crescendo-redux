@@ -13,12 +13,9 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkSim;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.PatchedSparkSim;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.AbsoluteEncoder;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -27,6 +24,8 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
+// TODO: stop using PatchedSparkSim once RevLib fixes their SparkSim bugs
+import com.revrobotics.spark.PatchedSparkSim;
 
 /**
  * Build on top of the Rev MAX sample code
@@ -61,6 +60,10 @@ public class RevMAXSwerveModule {
     public static final int kBevelPinionTeeth = 15;
 
     public static final double kMotorFreeSpeedRpm = 5676; // Neo motors are 5676 max RPM
+
+    // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
+    // https://www.revrobotics.com/rev-21-3005/
+    private static final double kTurningMotorReduction = 9424 / 203;
   }
 
   private final SparkMax m_drivingSparkMax;
@@ -84,10 +87,6 @@ public class RevMAXSwerveModule {
   private final double kDrivingMotorFreeSpeedRps = Constants.kMotorFreeSpeedRpm / 60;
 
   private final double kWheelCircumferenceMeters = Constants.kWheelDiameterMeters * Math.PI;
-
-  // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
-  // https://www.revrobotics.com/rev-21-3005/
-  private final double kTurningMotorReduction = 9424 / 203;
 
   // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
   // teeth on the bevel pinion
@@ -119,13 +118,8 @@ public class RevMAXSwerveModule {
   private final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
   private final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
 
-  // FIXME: simulation seems to be hitting current limits and capping it at about
-  // 50% voltage output but even when setting this limit super high, and getting
-  // 100% voltage, speed is still only about 1/3rd of what it should be
   private final int kDrivingMotorCurrentLimit = 40; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps
-
-  private final String m_logPrefix;
 
   /**
    * Constructs a MAXSwerveModule and configures the driving and turning motor,
@@ -136,7 +130,6 @@ public class RevMAXSwerveModule {
   public RevMAXSwerveModule(int drivingCANId, int turningCANId, double chassisAngularOffset) {
     m_drivingSparkMax = new SparkMax(drivingCANId, MotorType.kBrushless);
     m_turningSparkMax = new SparkMax(turningCANId, MotorType.kBrushless);
-    m_logPrefix = String.format("RevMod[%s,%s]", drivingCANId, turningCANId);
 
     // Factory reset, so we get the SPARKS MAX to a known state before configuring
     // them. This is useful in case a SPARK MAX is swapped out.
@@ -206,7 +199,14 @@ public class RevMAXSwerveModule {
     drivingConfig.smartCurrentLimit(kDrivingMotorCurrentLimit);
     turningConfig.smartCurrentLimit(kTurningMotorCurrentLimit);
 
+    // This identifies the calibrated zero of the absolute encoder, which
+    // by default is each 90deg offset from each other if you use the
+    // plastic calibration templates that Rev gave us with the modules.
+    // TODO: revisit and calibrate with all wheels facing forward?
     m_chassisAngularOffset = chassisAngularOffset;
+
+    // Accept the initial state of the wheels and turning motors, so that
+    // the rest of the code knows where it's starting from.
     m_desiredState.angle = new Rotation2d(m_turningEncoder.getPosition());
     m_drivingEncoder.setPosition(0);
 
@@ -275,12 +275,6 @@ public class RevMAXSwerveModule {
     m_turningPIDController.setReference(correctedDesiredState.angle.getRadians(), SparkMax.ControlType.kPosition);
     // TODO: should this be using the correctedDesiredState? is this a bug?
     m_desiredState = desiredState;
-
-    // TODO: remove introspection once we've debugged?
-    SmartDashboard.putNumber(String.format("%s.drive.targetMPS", m_logPrefix),
-        correctedDesiredState.speedMetersPerSecond);
-    SmartDashboard.putNumber(String.format("%s.turn.targetRadians", m_logPrefix),
-        correctedDesiredState.angle.getRadians());
   }
 
   // --- BEGIN STUFF FOR SIMULATION ---
@@ -294,7 +288,7 @@ public class RevMAXSwerveModule {
       DCMotor.getNEO(1));
   final SingleJointedArmSim m_turningPhysicsSim = new SingleJointedArmSim(
       DCMotor.getNeo550(1),
-      kTurningMotorReduction,
+      Constants.kTurningMotorReduction,
       0.001, // MOI
       0.0, // Length (m)
       Double.NEGATIVE_INFINITY, // Min angle
@@ -319,12 +313,6 @@ public class RevMAXSwerveModule {
     m_turningPhysicsSim.update(TimedRobot.kDefaultPeriod);
     m_turningMotorSim.iterate(m_turningPhysicsSim.getVelocityRadPerSec(), RobotController.getBatteryVoltage(),
         TimedRobot.kDefaultPeriod);
-
-    // TODO: remove introspection once we've debugged?
-    SmartDashboard.putNumber(String.format("%s.drive.voltagePercent", m_logPrefix), appliedDriveVoltagePercentage);
-    SmartDashboard.putNumber(String.format("%s.drive.actualMPS", m_logPrefix), metersPerSecond);
-    SmartDashboard.putNumber(String.format("%s.turn.voltagePercent", m_logPrefix), appliedTurningVoltagePercentage);
-    SmartDashboard.putNumber(String.format("%s.turn.actualRadians", m_logPrefix), m_turningPhysicsSim.getAngleRads());
   }
   // --- END STUFF FOR SIMULATION ---
 }

@@ -82,88 +82,8 @@
   },
   "Plot": {
     "Plot <0>": {
-      "plots": [
-        {
-          "axis": [
-            {
-              "label": "Meters Per Second",
-              "lockMax": true,
-              "lockMin": true,
-              "max": 7.0,
-              "min": -7.0
-            },
-            {
-              "label": "Voltage %",
-              "lockMax": true,
-              "lockMin": true,
-              "min": -1.0
-            },
-            {
-              "label": "Current Draw",
-              "lockMax": true,
-              "lockMin": true,
-              "max": 100.0,
-              "min": -100.0
-            }
-          ],
-          "backgroundColor": [
-            0.10000000149011612,
-            0.10000000149011612,
-            0.10000000149011612,
-            1.0
-          ],
-          "height": 309,
-          "name": "Drive Motor CAN=5",
-          "series": [
-            {
-              "color": [
-                0.10046295821666718,
-                0.5833333730697632,
-                0.13265429437160492,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard/RevMod[5,1].drive.targetMPS",
-              "name": "targetspeed"
-            },
-            {
-              "color": [
-                0.0,
-                1.0,
-                0.1333332061767578,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard/RevMod[5,1].drive.actualMPS",
-              "name": "actual speed"
-            },
-            {
-              "color": [
-                0.0,
-                0.49740734696388245,
-                0.8777777552604675,
-                1.0
-              ],
-              "id": "NT:/SmartDashboard/RevMod[5,1].drive.voltagePercent",
-              "name": "voltage out",
-              "yAxis": 1
-            },
-            {
-              "color": [
-                0.7686275243759155,
-                0.30588236451148987,
-                0.32156863808631897,
-                1.0
-              ],
-              "id": "SPARK MAX [5]-Motor Current",
-              "name": "current draw",
-              "yAxis": 2
-            }
-          ],
-          "yaxis2": true,
-          "yaxis3": true
-        }
-      ],
       "window": {
-        "name": "Drive Motors"
+        "name": "Overview Graphs"
       }
     }
   }

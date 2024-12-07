@@ -53,10 +53,11 @@ public class Drivetrain extends SubsystemBase {
   }
 
   // Logging helpers.
-  StructArrayPublisher<SwerveModuleState> m_swerveStatePublisher = NetworkTableInstance.getDefault()
+  final StructArrayPublisher<SwerveModuleState> m_swerveStatePublisher = NetworkTableInstance.getDefault()
       .getStructArrayTopic("SwerveStates", SwerveModuleState.struct).publish();
-  StructArrayPublisher<SwerveModuleState> m_desiredSwerveStatePublisher = NetworkTableInstance.getDefault()
+  final StructArrayPublisher<SwerveModuleState> m_desiredSwerveStatePublisher = NetworkTableInstance.getDefault()
       .getStructArrayTopic("DesiredStates", SwerveModuleState.struct).publish();
+  final Field2d m_fieldViz = new Field2d();
 
   // Slew rate filter variables for controlling lateral acceleration
   // and preventing excessive swerve wheel wear.
@@ -103,8 +104,6 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void periodic() {
-    m_swerveStatePublisher.set(getModuleStates());
-    m_desiredSwerveStatePublisher.set(getDesiredModuleStates());
     m_poseEstimator.update(
         getGyroAngle(),
         new SwerveModulePosition[] {
@@ -269,12 +268,6 @@ public class Drivetrain extends SubsystemBase {
     double ySpeedDelivered = ySpeedCommanded * Constants.kMaxSpeedMetersPerSecond;
     double rotDelivered = m_currentRotation * Constants.kMaxAngularSpeed;
 
-    // TODO: remove this introspection once we debug everything?
-    SmartDashboard.putNumber("drivetrain.xInput", xSpeed);
-    SmartDashboard.putNumber("drivetrain.xAdjusted", xSpeedCommanded);
-    SmartDashboard.putNumber("drivetrain.yInput", ySpeed);
-    SmartDashboard.putNumber("drivetrain.yAdjusted", ySpeedCommanded);
-
     drive(new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered), fieldRelative);
 
   }
@@ -315,7 +308,6 @@ public class Drivetrain extends SubsystemBase {
   // see inspiration here:
   // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerve.java#L411
   Pose2d m_simPose = new Pose2d();
-  final Field2d m_fieldViz = new Field2d();
 
   @Override
   public void simulationPeriodic() {

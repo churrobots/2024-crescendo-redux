@@ -1,3 +1,6 @@
+// FIXME: submit this patch to RevLib somehow - doesn't appear there is a Github repo to submit PRs directly
+// https://github.com/REVrobotics/REV-Software-Binaries
+
 /*
  * Copyright (c) 2024 REV Robotics
  *
@@ -272,7 +275,16 @@ public class PatchedSparkSim {
     }
 
     double velocityRPM = velocity / velocityFactor;
-    m_position.set(m_position.get() + ((velocityRPM / 60) * dt) / positionFactor);
+    ////////////////////////////////////////////////////////
+    // BEGIN PATCH
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // NOTE: original revlib code divided by positionFactor incorrectly
+    final double distanceInRotations = ((velocityRPM / 60) * dt);
+    final double distanceInConvertedUnits = distanceInRotations * positionFactor;
+    m_position.set(m_position.get() + distanceInConvertedUnits);
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    // END PATCH
+    ////////////////////////////////////////////////////////
     m_busVoltage.set(vbus);
 
     // Calculate the applied output

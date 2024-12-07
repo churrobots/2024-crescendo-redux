@@ -83,5 +83,6 @@
   "workbench.startupEditor": "none",
   "editor.minimap.size": "fit",
   "terminal.integrated.tabs.enabled": false,
-  "editor.wordBasedSuggestions": "off"
+  "editor.wordBasedSuggestions": "off",
+  "wpilib.skipSelectSimulateExtension": true
 }

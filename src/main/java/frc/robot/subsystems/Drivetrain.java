@@ -16,6 +16,8 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -49,6 +51,12 @@ public class Drivetrain extends SubsystemBase {
     public static final double kMagnitudeSlewRate = 4.5; // percent per second (1 = 100%)
     public static final double kRotationalSlewRate = 6; // percent per second (1 = 100%)
   }
+
+  // Logging helpers.
+  StructArrayPublisher<SwerveModuleState> m_swerveStatePublisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("SwerveStates", SwerveModuleState.struct).publish();
+  StructArrayPublisher<SwerveModuleState> m_desiredSwerveStatePublisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("DesiredStates", SwerveModuleState.struct).publish();
 
   // Slew rate filter variables for controlling lateral acceleration
   // and preventing excessive swerve wheel wear.
@@ -95,6 +103,8 @@ public class Drivetrain extends SubsystemBase {
 
   @Override
   public void periodic() {
+    m_swerveStatePublisher.set(getModuleStates());
+    m_desiredSwerveStatePublisher.set(getDesiredModuleStates());
     m_poseEstimator.update(
         getGyroAngle(),
         new SwerveModulePosition[] {
@@ -116,6 +126,15 @@ public class Drivetrain extends SubsystemBase {
         m_frontRight.getState(),
         m_rearLeft.getState(),
         m_rearRight.getState()
+    };
+  }
+
+  SwerveModuleState[] getDesiredModuleStates() {
+    return new SwerveModuleState[] {
+        m_frontLeft.getDesiredState(),
+        m_frontRight.getDesiredState(),
+        m_rearLeft.getDesiredState(),
+        m_rearRight.getDesiredState()
     };
   }
 

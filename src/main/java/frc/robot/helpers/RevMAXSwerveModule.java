@@ -239,6 +239,10 @@ public class RevMAXSwerveModule {
         new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
   }
 
+  public SwerveModuleState getDesiredState() {
+    return m_desiredState;
+  }
+
   /**
    * Returns the current position of the module.
    *

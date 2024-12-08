@@ -257,13 +257,56 @@ public class PatchedSparkSim {
 
     double positionFactor = 0;
     double velocityFactor = 0;
+    ////////////////////////////////////////////////////////
+    // BEGIN PATCH
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // NOTE: original revlib code did not take into account the selected encoder
     if (m_spark.getSparkModel() == SparkLowLevel.SparkModel.SparkFlex) {
-      positionFactor = ((SparkFlex) m_spark).configAccessor.encoder.getPositionConversionFactor();
-      velocityFactor = ((SparkFlex) m_spark).configAccessor.encoder.getVelocityConversionFactor();
+      var configAccessor = ((SparkFlex) m_spark).configAccessor;
+      ClosedLoopConfig.FeedbackSensor feedbackSensor = configAccessor.closedLoop.getFeedbackSensor();
+      switch (feedbackSensor) {
+        case kPrimaryEncoder:
+          positionFactor = configAccessor.encoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.encoder.getVelocityConversionFactor();
+          break;
+        case kAbsoluteEncoder:
+          positionFactor = configAccessor.absoluteEncoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.absoluteEncoder.getVelocityConversionFactor();
+          break;
+        case kAlternateOrExternalEncoder:
+          positionFactor = configAccessor.externalEncoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.externalEncoder.getVelocityConversionFactor();
+          break;
+        case kNoSensor:
+          break;
+        default:
+          break;
+      }
     } else if (m_spark.getSparkModel() == SparkLowLevel.SparkModel.SparkMax) {
-      positionFactor = ((SparkMax) m_spark).configAccessor.encoder.getPositionConversionFactor();
-      velocityFactor = ((SparkMax) m_spark).configAccessor.encoder.getVelocityConversionFactor();
+      var configAccessor = ((SparkMax) m_spark).configAccessor;
+      ClosedLoopConfig.FeedbackSensor feedbackSensor = configAccessor.closedLoop.getFeedbackSensor();
+      switch (feedbackSensor) {
+        case kPrimaryEncoder:
+          positionFactor = configAccessor.encoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.encoder.getVelocityConversionFactor();
+          break;
+        case kAbsoluteEncoder:
+          positionFactor = configAccessor.absoluteEncoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.absoluteEncoder.getVelocityConversionFactor();
+          break;
+        case kAlternateOrExternalEncoder:
+          positionFactor = configAccessor.alternateEncoder.getPositionConversionFactor();
+          velocityFactor = configAccessor.alternateEncoder.getVelocityConversionFactor();
+          break;
+        case kNoSensor:
+          break;
+        default:
+          break;
+      }
     }
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    // END PATCH
+    ////////////////////////////////////////////////////////
 
     // In the 2022 beta the above were not being set correctly. Seems to work now...
     // Either way for now this will prevent divide by 0 errors.

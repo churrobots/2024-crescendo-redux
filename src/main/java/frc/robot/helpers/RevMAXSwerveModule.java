@@ -149,8 +149,6 @@ public class RevMAXSwerveModule {
     // encoder and the absolute encoder (even though we're theoretically only
     // using the absolute encoder), since SparkSim relies on the native encoder
     // conversion config when iterating the sim.
-    turningConfig.encoder.positionConversionFactor(kTurningEncoderPositionFactor);
-    turningConfig.encoder.velocityConversionFactor(kTurningEncoderVelocityFactor);
     turningConfig.absoluteEncoder.positionConversionFactor(kTurningEncoderPositionFactor);
     turningConfig.absoluteEncoder.velocityConversionFactor(kTurningEncoderVelocityFactor);
 

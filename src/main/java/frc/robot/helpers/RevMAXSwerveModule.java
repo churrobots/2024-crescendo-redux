@@ -33,7 +33,6 @@ public class RevMAXSwerveModule {
 
     // Tuning values
     public static final double kWheelDiameterMeters = 0.0831;
-    public static final double kWheelCircumferenceInMeters = Math.PI * kWheelDiameterMeters;
 
     public static final double kDrivingP = .08;// .04
     public static final double kDrivingI = 0;
@@ -54,10 +53,6 @@ public class RevMAXSwerveModule {
     public static final int kBevelPinionTeeth = 15;
 
     public static final double kMotorFreeSpeedRpm = 5676; // Neo motors are 5676 max RPM
-
-    // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
-    // https://www.revrobotics.com/rev-21-3005/
-    private static final double kTurningMotorReduction = 9424 / 203;
   }
 
   private final SparkMax m_drivingSparkMax;
@@ -77,6 +72,10 @@ public class RevMAXSwerveModule {
   // the steering motor in the MAXSwerve Module.
   private final boolean kTurningEncoderInverted = true;
 
+  // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
+  // https://www.revrobotics.com/rev-21-3005/
+  private static final double kTurningMotorReduction = 9424 / 203;
+
   // Calculations required for driving motor conversion factors and feed forward
   private final double kDrivingMotorFreeSpeedRps = Constants.kMotorFreeSpeedRpm / 60;
 
@@ -87,9 +86,9 @@ public class RevMAXSwerveModule {
   private final double kDriveWheelFreeSpeedRps = (kDrivingMotorFreeSpeedRps * kWheelCircumferenceMeters)
       / kDrivingMotorReduction;
 
-  private final double kDrivingEncoderPositionFactor = (Constants.kWheelDiameterMeters * Math.PI)
+  private final double kDrivingEncoderPositionFactor = kWheelCircumferenceMeters
       / kDrivingMotorReduction; // meters
-  private final double kDrivingEncoderVelocityFactor = ((Constants.kWheelDiameterMeters * Math.PI)
+  private final double kDrivingEncoderVelocityFactor = (kWheelCircumferenceMeters
       / kDrivingMotorReduction) / 60.0; // meters per second because native units are RPM
 
   private final double kTurningEncoderPositionFactor = (2 * Math.PI); // radians
@@ -217,10 +216,11 @@ public class RevMAXSwerveModule {
     // passed in and we won't have the SparkMax references until this point.
     m_sim = new RevMAXSwerveModuleSim(
         m_drivingSparkMax,
-        m_turningSparkMax,
-        Constants.kTurningMotorReduction,
         kDrivingMotorReduction,
-        Constants.kWheelCircumferenceInMeters);
+        kDrivingEncoderVelocityFactor,
+        m_turningSparkMax,
+        kTurningMotorReduction,
+        kTurningEncoderVelocityFactor);
     ChurroSim.register(m_sim);
   }
 

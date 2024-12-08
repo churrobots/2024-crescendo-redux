@@ -5,6 +5,9 @@
 package frc.churrolib;
 
 import com.revrobotics.spark.SparkBase;
+import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkLowLevel;
+import com.revrobotics.spark.SparkMax;
 // TODO: stop using PatchedSparkSim once RevLib fixes their SparkSim bugs
 import com.revrobotics.spark.PatchedSparkSim;
 
@@ -27,14 +30,16 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
   final PatchedSparkSim m_turningMotorControllerSim;
   final FlywheelSim m_drivingPhysicsSim;
   final SingleJointedArmSim m_turningPhysicsSim;
-  final double m_wheelCircumferenceInConvertedUnits;
+  final double m_drivingSimEncoderVelocityFactorFromRPM;
+  final double m_turningSimEncoderVelocityFactorFromRPM;
 
   public RevMAXSwerveModuleSim(
       SparkBase drivingMotorController,
+      double drivingMotorReduction,
+      double drivingEncoderVelocityFactor,
       SparkBase turningMotorController,
       double turningMotorReduction,
-      double drivingMotorReduction,
-      double wheelCircumferenceInConvertedUnits) {
+      double turningEncoderVelocityFactor) {
 
     // Start with the motor controller sims.
     m_drivingMotorController = drivingMotorController;
@@ -61,7 +66,16 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
         Math.random() * 2 * Math.PI // random starting angle for the wheels, never know
     );
 
-    m_wheelCircumferenceInConvertedUnits = wheelCircumferenceInConvertedUnits;
+    // The encoder velocity must be retrieved from the output of a physics sim,
+    // which will give us an RPM. The RPM goes through the reduction, which gives us
+    // an RPM for the Spark encoder. The "velocity factor" from the Spark config is
+    // used to multiply the RPM to get converted velocity units for the encoder.
+    // This converted velocity can be used in the `SparkSim::iterate()` method to
+    // update the sim.
+    double drivingReductionFromOutputToEncoder = drivingMotorReduction;
+    double turningReductionFromOutputToEncoder = 1; // 1:1 since absolute encoder is on output shaft
+    m_drivingSimEncoderVelocityFactorFromRPM = drivingReductionFromOutputToEncoder * drivingEncoderVelocityFactor;
+    m_turningSimEncoderVelocityFactorFromRPM = turningReductionFromOutputToEncoder * turningEncoderVelocityFactor;
   }
 
   public void iterate(double timeDeltaInSeconds) {
@@ -76,11 +90,9 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
     // Then we can ask the driving physics sim what the resulting velocity is, so we
     // can apply that velocity to the driving motor controller sim, so that the
     // motor controller can update its simulated sensors for distance and velocity.
-    // TODO: shouldn't this be using the gearbox reduction? rather than the
-    // circumference of the wheel?
-    double driveVelocityInRotationsPerSecond = m_drivingPhysicsSim.getAngularVelocityRadPerSec() / (2.0 * Math.PI);
-    double driveVelocityInConvertedUnits = driveVelocityInRotationsPerSecond * m_wheelCircumferenceInConvertedUnits;
-    m_drivingMotorControllerSim.iterate(driveVelocityInConvertedUnits, RobotController.getBatteryVoltage(),
+    double drivingEncoderVelocityRPM = m_drivingPhysicsSim.getAngularVelocityRPM();
+    double drivingEncoderVelocity = drivingEncoderVelocityRPM * m_drivingSimEncoderVelocityFactorFromRPM;
+    m_drivingMotorControllerSim.iterate(drivingEncoderVelocity, RobotController.getBatteryVoltage(),
         timeDeltaInSeconds);
 
     // Now same thing for the turning motor. Apply the voltage for the number of
@@ -93,10 +105,9 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
     // Then we can ask the turning physics sim what the resulting velocity is, so we
     // can apply that velocity to the turning motor controller sim, so that the
     // motor controller can update its simulated sensors for distance and velocity
-    // TODO: assert that the motor controller is configured for radians/sec, might
-    // have to do that in the constructor
-    double turningVelocityInConvertedUnits = m_turningPhysicsSim.getVelocityRadPerSec();
-    m_turningMotorControllerSim.iterate(turningVelocityInConvertedUnits, RobotController.getBatteryVoltage(),
+    double turningEncoderVelocityRPM = m_turningPhysicsSim.getVelocityRadPerSec() * 60 / (2.0 * Math.PI);
+    double turningEncoderVelocity = turningEncoderVelocityRPM * m_turningSimEncoderVelocityFactorFromRPM;
+    m_turningMotorControllerSim.iterate(turningEncoderVelocity, RobotController.getBatteryVoltage(),
         timeDeltaInSeconds);
   }
 }

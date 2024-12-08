@@ -109,7 +109,7 @@ public class RevMAXSwerveModule {
   private final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
   private final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
 
-  private final int kDrivingMotorCurrentLimit = 40; // amps
+  private final int kDrivingMotorCurrentLimit = 50; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps
 
   final RevMAXSwerveModuleSim m_sim;
@@ -201,7 +201,9 @@ public class RevMAXSwerveModule {
     m_desiredState.angle = new Rotation2d(m_turningEncoder.getPosition());
     m_drivingEncoder.setPosition(0);
 
-    // Apply the configuration we just built out.
+    // Apply the configuration we just built out. Reset parameters before
+    // applying the configuration to bring the SPARK to a known good state.
+    // Persist the settings to the SPARK to avoid losing them on a power cycle.
     m_drivingSparkMax.configure(drivingConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_turningSparkMax.configure(turningConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
@@ -268,7 +270,9 @@ public class RevMAXSwerveModule {
     // Command driving and turning SPARKS MAX towards their respective setpoints.
     m_drivingPIDController.setReference(correctedDesiredState.speedMetersPerSecond, SparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(correctedDesiredState.angle.getRadians(), SparkMax.ControlType.kPosition);
-    // TODO: should this be using the correctedDesiredState? is this a bug?
+
+    // This is supposed to track the un-corrected state. Otherwise you end up with
+    // incorrect angle values that mismatch the driving velocity values.
     m_desiredState = desiredState;
   }
 }

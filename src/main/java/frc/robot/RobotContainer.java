@@ -30,7 +30,7 @@ public class RobotContainer {
               Constants.kDriveDeadband),
           -MathUtil.applyDeadband(driverController.getRightX(),
               Constants.kDriveDeadband),
-          true, true),
+          true, false),
       drivetrain);
 
   public RobotContainer() {

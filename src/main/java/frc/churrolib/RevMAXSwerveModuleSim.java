@@ -57,6 +57,9 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
     // Add the physics sims.
     // TODO: VecBuilder was weird, figure out if we need to add noise back in
     // https://github.com/frc604/2023-public/blob/main/FRC-2023/src/main/java/frc/quixlib/swerve/QuixSwerveModule.java#L88
+    // TODO: look at how Mechanical Advantage uses the flywheel sim
+    // https://www.chiefdelphi.com/t/frc-6328-mechanical-advantage-2022-build-thread/398645/160#simulation-4
+    // https://github.com/Mechanical-Advantage/SwerveDevelopment/blob/main/src/main/java/frc/robot/subsystems/drive/ModuleIOSim.java
     m_drivingPhysicsSim = new FlywheelSim(
         LinearSystemId.createFlywheelSystem(DCMotor.getNEO(1), 0.01, drivingMotorReduction),
         DCMotor.getNEO(1));

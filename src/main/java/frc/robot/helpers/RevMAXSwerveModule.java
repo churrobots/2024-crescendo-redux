@@ -8,6 +8,9 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
+import frc.churrolib.ChurroSim;
+import frc.churrolib.RevMAXSwerveModuleSim;
+
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkClosedLoopController;
@@ -70,25 +73,28 @@ public class RevMAXSwerveModule {
   // the steering motor in the MAXSwerve Module.
   private final boolean kTurningEncoderInverted = true;
 
+  // Turning motor reduction from "Azimuth Ratio" of MAXSwerve module spec:
+  // https://www.revrobotics.com/rev-21-3005/
+  private static final double kTurningMotorReduction = 9424 / 203;
+
   // Calculations required for driving motor conversion factors and feed forward
   private final double kDrivingMotorFreeSpeedRps = Constants.kMotorFreeSpeedRpm / 60;
 
   private final double kWheelCircumferenceMeters = Constants.kWheelDiameterMeters * Math.PI;
 
-  // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
-  // teeth on the bevel pinion
   private final double kDrivingMotorReduction = ((double) Constants.kWheelBevelTeeth * Constants.kFirstStageSpurTeeth)
       / ((double) Constants.kDrivingMotorPinionTeeth * Constants.kBevelPinionTeeth);
   private final double kDriveWheelFreeSpeedRps = (kDrivingMotorFreeSpeedRps * kWheelCircumferenceMeters)
       / kDrivingMotorReduction;
 
-  private final double kDrivingEncoderPositionFactor = (Constants.kWheelDiameterMeters * Math.PI)
+  private final double kDrivingEncoderPositionFactor = kWheelCircumferenceMeters
       / kDrivingMotorReduction; // meters
-  private final double kDrivingEncoderVelocityFactor = ((Constants.kWheelDiameterMeters * Math.PI)
-      / kDrivingMotorReduction) / 60.0; // meters per second
+  private final double kDrivingEncoderVelocityFactor = (kWheelCircumferenceMeters
+      / kDrivingMotorReduction) / 60.0; // meters per second because native units are RPM
 
   private final double kTurningEncoderPositionFactor = (2 * Math.PI); // radians
   private final double kTurningEncoderVelocityFactor = (2 * Math.PI) / 60.0; // radians per second
+                                                                             // because native units are RPM
 
   private final double kTurningEncoderPositionPIDMinInput = 0; // radians
   private final double kTurningEncoderPositionPIDMaxInput = kTurningEncoderPositionFactor; // radians
@@ -104,8 +110,10 @@ public class RevMAXSwerveModule {
   private final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
   private final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
 
-  private final int kDrivingMotorCurrentLimit = 40; // 40amps
+  private final int kDrivingMotorCurrentLimit = 50; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps
+
+  final RevMAXSwerveModuleSim m_sim;
 
   /**
    * Constructs a MAXSwerveModule and configures the driving and turning motor,
@@ -138,7 +146,10 @@ public class RevMAXSwerveModule {
 
     // Apply position and velocity conversion factors for the turning encoder. We
     // want these in radians and radians per second to use with WPILib's swerve
-    // APIs.
+    // APIs. Note that we have to set the conversion factor on BOTH the native
+    // encoder and the absolute encoder (even though we're theoretically only
+    // using the absolute encoder), since SparkSim relies on the native encoder
+    // conversion config when iterating the sim.
     turningConfig.absoluteEncoder.positionConversionFactor(kTurningEncoderPositionFactor);
     turningConfig.absoluteEncoder.velocityConversionFactor(kTurningEncoderVelocityFactor);
 
@@ -180,13 +191,38 @@ public class RevMAXSwerveModule {
     drivingConfig.smartCurrentLimit(kDrivingMotorCurrentLimit);
     turningConfig.smartCurrentLimit(kTurningMotorCurrentLimit);
 
+    // This identifies the calibrated zero of the absolute encoder, which
+    // by default is each 90deg offset from each other if you use the
+    // plastic calibration templates that Rev gave us with the modules.
+    // TODO: revisit and calibrate with all wheels facing forward?
     m_chassisAngularOffset = chassisAngularOffset;
+
+    // Accept the initial state of the wheels and turning motors, so that
+    // the rest of the code knows where it's starting from.
     m_desiredState.angle = new Rotation2d(m_turningEncoder.getPosition());
     m_drivingEncoder.setPosition(0);
 
-    // Apply the configuration we just built out.
+    // Apply the configuration we just built out. Reset parameters before
+    // applying the configuration to bring the SPARK to a known good state.
+    // Persist the settings to the SPARK to avoid losing them on a power cycle.
     m_drivingSparkMax.configure(drivingConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     m_turningSparkMax.configure(turningConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+
+    // Start at zero so that simulation doesn't freak out. Otherwise
+    // it will be trying to simulate without a starting Control Mode.
+    m_drivingPIDController.setReference(0, SparkMax.ControlType.kVelocity);
+    m_turningPIDController.setReference(0, SparkMax.ControlType.kPosition);
+
+    // The sim needs to be initialized in the constructor because the CAN IDs are
+    // passed in and we won't have the SparkMax references until this point.
+    m_sim = new RevMAXSwerveModuleSim(
+        m_drivingSparkMax,
+        kDrivingMotorReduction,
+        kDrivingEncoderVelocityFactor,
+        m_turningSparkMax,
+        kTurningMotorReduction,
+        kTurningEncoderVelocityFactor);
+    ChurroSim.register(m_sim);
   }
 
   /**
@@ -199,6 +235,10 @@ public class RevMAXSwerveModule {
     // relative to the chassis.
     return new SwerveModuleState(m_drivingEncoder.getVelocity(),
         new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
+  }
+
+  public SwerveModuleState getDesiredState() {
+    return m_desiredState;
   }
 
   /**
@@ -231,8 +271,9 @@ public class RevMAXSwerveModule {
     // Command driving and turning SPARKS MAX towards their respective setpoints.
     m_drivingPIDController.setReference(correctedDesiredState.speedMetersPerSecond, SparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(correctedDesiredState.angle.getRadians(), SparkMax.ControlType.kPosition);
-    // TODO: should this be using the correctedDesiredState? is this a bug?
+
+    // This is supposed to track the un-corrected state. Otherwise you end up with
+    // incorrect angle values that mismatch the driving velocity values.
     m_desiredState = desiredState;
   }
-
 }

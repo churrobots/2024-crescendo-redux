@@ -1,0 +1,90 @@
+{
+  "HALProvider": {
+    "Timing": {
+      "window": {
+        "visible": false
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Field": "Field2d"
+    },
+    "windows": {
+      "/SmartDashboard/Field": {
+        "Odometry": {
+          "arrowColor": [
+            0.6117647290229797,
+            0.5647059082984924,
+            0.33725491166114807,
+            255.0
+          ],
+          "arrowWeight": 3.0,
+          "color": [
+            0.6111111044883728,
+            0.5652777552604675,
+            0.3361111283302307,
+            255.0
+          ],
+          "style": "Box/Image",
+          "weight": 3.0
+        },
+        "Robot": {
+          "arrowColor": [
+            1.0,
+            0.8352941274642944,
+            0.0,
+            255.0
+          ],
+          "arrowWeight": 3.0,
+          "color": [
+            1.0,
+            0.8333333730697632,
+            0.0,
+            255.0
+          ],
+          "style": "Box/Image"
+        },
+        "bottom": 1476,
+        "height": 8.210550308227539,
+        "left": 150,
+        "right": 2961,
+        "top": 79,
+        "width": 16.541748046875,
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "SmartDashboard": {
+        "Field": {
+          "double[]##v_/SmartDashboard/Field/Robot": {
+            "open": true
+          }
+        }
+      },
+      "SwerveModuleState[]##v_DesiredStates": {
+        "SwerveModuleState##v_[0]": {
+          "Rotation2d##v_angle": {
+            "open": true
+          },
+          "open": true
+        }
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "visible": true
+  },
+  "Plot": {
+    "Plot <0>": {
+      "window": {
+        "name": "Overview Graphs"
+      }
+    }
+  }
+}

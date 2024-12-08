@@ -15,8 +15,14 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.churrolib.ChurroSim;
+import frc.churrolib.GenericSwerveSim;
 import frc.robot.CANMapping;
 import frc.robot.helpers.RevMAXSwerveModule;
 import frc.robot.helpers.SwerveUtils;
@@ -45,6 +51,13 @@ public class Drivetrain extends SubsystemBase {
     public static final double kMagnitudeSlewRate = 4.5; // percent per second (1 = 100%)
     public static final double kRotationalSlewRate = 6; // percent per second (1 = 100%)
   }
+
+  // Logging helpers.
+  final StructArrayPublisher<SwerveModuleState> m_actualSwerveStatePublisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("ActualSwerveStates", SwerveModuleState.struct).publish();
+  final StructArrayPublisher<SwerveModuleState> m_desiredSwerveStatePublisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("DesiredSwerveStates", SwerveModuleState.struct).publish();
+  final Field2d m_fieldViz = new Field2d();
 
   // Slew rate filter variables for controlling lateral acceleration
   // and preventing excessive swerve wheel wear.
@@ -85,7 +98,12 @@ public class Drivetrain extends SubsystemBase {
       },
       new Pose2d());
 
+  private final GenericSwerveSim m_sim;
+
   public Drivetrain() {
+    SmartDashboard.putData("Field", m_fieldViz);
+    m_sim = new GenericSwerveSim(m_gyro, this::getRobotRelativeSpeeds, m_fieldViz);
+    ChurroSim.register(m_sim);
   }
 
   @Override
@@ -98,6 +116,10 @@ public class Drivetrain extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+    SmartDashboard.putNumber("DrivetrainGyro", m_gyro.getRotation2d().getRadians());
+    m_actualSwerveStatePublisher.set(getModuleStates());
+    m_desiredSwerveStatePublisher.set(getDesiredModuleStates());
+    m_fieldViz.getObject("Odometry").setPose(m_poseEstimator.getEstimatedPosition());
   }
 
   ChassisSpeeds getRobotRelativeSpeeds() {
@@ -110,6 +132,15 @@ public class Drivetrain extends SubsystemBase {
         m_frontRight.getState(),
         m_rearLeft.getState(),
         m_rearRight.getState()
+    };
+  }
+
+  SwerveModuleState[] getDesiredModuleStates() {
+    return new SwerveModuleState[] {
+        m_frontLeft.getDesiredState(),
+        m_frontRight.getDesiredState(),
+        m_rearLeft.getDesiredState(),
+        m_rearRight.getDesiredState()
     };
   }
 
@@ -164,7 +195,7 @@ public class Drivetrain extends SubsystemBase {
   // https://github.com/firebears-frc/FB2024/blob/main/src/main/java/frc/robot/subsystems/Bass.java#L284
   void drive(ChassisSpeeds speeds, boolean fieldRelative) {
     if (fieldRelative) {
-      speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, getPose().getRotation());
+      speeds.toRobotRelativeSpeeds(getPose().getRotation());
     }
     var swerveModuleStates = m_kinematics.toSwerveModuleStates(speeds);
     SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.kMaxSpeedMetersPerSecond);

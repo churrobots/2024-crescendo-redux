@@ -5,9 +5,6 @@
 package frc.churrolib;
 
 import com.revrobotics.spark.SparkBase;
-import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkLowLevel;
-import com.revrobotics.spark.SparkMax;
 // TODO: stop using PatchedSparkSim once RevLib fixes their SparkSim bugs
 import com.revrobotics.spark.PatchedSparkSim;
 

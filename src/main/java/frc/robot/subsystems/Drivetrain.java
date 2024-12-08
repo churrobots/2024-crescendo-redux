@@ -53,10 +53,10 @@ public class Drivetrain extends SubsystemBase {
   }
 
   // Logging helpers.
-  final StructArrayPublisher<SwerveModuleState> m_swerveStatePublisher = NetworkTableInstance.getDefault()
-      .getStructArrayTopic("SwerveStates", SwerveModuleState.struct).publish();
+  final StructArrayPublisher<SwerveModuleState> m_actualSwerveStatePublisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("ActualSwerveStates", SwerveModuleState.struct).publish();
   final StructArrayPublisher<SwerveModuleState> m_desiredSwerveStatePublisher = NetworkTableInstance.getDefault()
-      .getStructArrayTopic("DesiredStates", SwerveModuleState.struct).publish();
+      .getStructArrayTopic("DesiredSwerveStates", SwerveModuleState.struct).publish();
   final Field2d m_fieldViz = new Field2d();
 
   // Slew rate filter variables for controlling lateral acceleration
@@ -116,6 +116,9 @@ public class Drivetrain extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+    SmartDashboard.putNumber("DrivetrainGyro", m_gyro.getRotation2d().getRadians());
+    m_actualSwerveStatePublisher.set(getModuleStates());
+    m_desiredSwerveStatePublisher.set(getDesiredModuleStates());
     m_fieldViz.getObject("Odometry").setPose(m_poseEstimator.getEstimatedPosition());
   }
 

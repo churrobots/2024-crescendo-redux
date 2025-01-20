@@ -35,7 +35,7 @@ public class RevMAXSwerveModule {
     // Tuning values
     public static final double kWheelDiameterMeters = 0.0831;
 
-    public static final double kDrivingP = .08;// .04
+    public static final double kDrivingP = .2;// .04
     public static final double kDrivingI = 0;
     public static final double kDrivingD = 0;
 
@@ -103,12 +103,12 @@ public class RevMAXSwerveModule {
   private final double kDrivingMinOutput = -1;
   private final double kDrivingMaxOutput = 1;
 
-  private final double kTurningFF = 0;
+  private final double kTurningFF = 0.01;
   private final double kTurningMinOutput = -1;
   private final double kTurningMaxOutput = 1;
 
   private final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
-  private final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
+  private final IdleMode kTurningMotorIdleMode = IdleMode.kCoast;
 
   private final int kDrivingMotorCurrentLimit = 50; // amps
   private final int kTurningMotorCurrentLimit = 20; // amps

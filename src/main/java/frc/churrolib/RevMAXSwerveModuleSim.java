@@ -13,6 +13,7 @@ import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Simulation for a single MAXSwerve module, inspired by the "flywheel-and-arm"
@@ -114,5 +115,9 @@ public class RevMAXSwerveModuleSim implements ChurroSim.SimulationEntity {
     double turningEncoderVelocityInConvertedUnits = turningEncoderRPM * m_turningEncoderVelocityFactor;
     m_turningMotorControllerSim.iterate(turningEncoderVelocityInConvertedUnits, RobotController.getBatteryVoltage(),
         timeDeltaInSeconds);
+
+    // FIXME: why do these jump to +/- extremes constantly
+    SmartDashboard.putNumber("drive.appliedOutput", m_drivingMotorController.getAppliedOutput());
+    SmartDashboard.putNumber("turn.appliedOutput", m_turningMotorController.getAppliedOutput());
   }
 }

@@ -65,7 +65,14 @@
           "double[]##v_/SmartDashboard/Field/Robot": {
             "open": true
           }
-        }
+        },
+        "open": true
+      },
+      "SwerveModuleState[]##v_ActualSwerveStates": {
+        "SwerveModuleState##v_[0]": {
+          "open": true
+        },
+        "open": true
       },
       "SwerveModuleState[]##v_DesiredStates": {
         "SwerveModuleState##v_[0]": {
@@ -74,6 +81,15 @@
           },
           "open": true
         }
+      },
+      "SwerveModuleState[]##v_DesiredSwerveStates": {
+        "SwerveModuleState##v_[0]": {
+          "Rotation2d##v_angle": {
+            "open": true
+          },
+          "open": true
+        },
+        "open": true
       }
     }
   },
@@ -82,6 +98,37 @@
   },
   "Plot": {
     "Plot <0>": {
+      "plots": [
+        {
+          "backgroundColor": [
+            0.10000000149011612,
+            0.10000000149011612,
+            0.10000000149011612,
+            1.0
+          ],
+          "height": 309,
+          "series": [
+            {
+              "color": [
+                0.2980392277240753,
+                0.44705885648727417,
+                0.6901960968971252,
+                1.0
+              ],
+              "id": "NT:ActualSwerveStates[0]/speed"
+            },
+            {
+              "color": [
+                0.8666667342185974,
+                0.5176470875740051,
+                0.32156863808631897,
+                1.0
+              ],
+              "id": "NT:DesiredSwerveStates[0]/speed"
+            }
+          ]
+        }
+      ],
       "window": {
         "name": "Overview Graphs"
       }
